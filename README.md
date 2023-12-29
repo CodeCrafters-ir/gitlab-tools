@@ -2,7 +2,7 @@
 
 ***
 
-## gitlab runner with docker 
+## gitlab-runner with docker for example
 ```
 docker volume create gitlab-runner-config
 
@@ -13,7 +13,71 @@ docker run -d --name gitlab-runner --restart always \
 
 docker ps
 
-docker exec -it gitlab
+docker exec -it gitlab-runner bash
 
 gitlab-runner register
+```
+
+***
+
+## gitlab-runner with docker:dind
+```
+step 1: check for overlay
+    # lsmod | grep overlay
+
+step 2: if not oerlay
+    # modprobe overlay
+    # grep '^overlay$' /etc/modules || echo overlay >>/etc/modules
+
+step 3: config docker
+    in this path /etc/docker/daemon.json add text Down:
+        {
+          "storage-driver": "overlay2"
+        }
+
+step 4: restart docker
+    # systemctl restart docker
+
+
+step 5: create docker network
+    # docker network create gitlab-runner-net
+
+step 6: dind
+    # docker run -d \
+      --name gitlab-dind \
+      --privileged \
+      --restart always \
+      --network gitlab-runner-net \
+      -v /var/lib/docker \
+      docker:17.06.0-ce-dind \
+        --storage-driver=overlay2
+
+step 7: config gitlab runner
+    # mkdir -p /srv/gitlab-runner
+    # touch /srv/gitlab-runner/config.toml
+
+step 8: up gitlab-runner
+    # docker run -d \
+      --name gitlab-runner \
+      --restart always \
+      --network gitlab-runner-net \
+      -v /srv/gitlab-runner/config.toml:/etc/gitlab-runner/config.toml \
+      -e DOCKER_HOST=tcp://gitlab-dind:2375 \
+      gitlab/gitlab-runner:alpine
+
+step 9: register gitlab-runner
+    # docker run -it --rm \
+      -v /srv/gitlab-runner/config.toml:/etc/gitlab-runner/config.toml \
+      gitlab/gitlab-runner:alpine \
+        register \
+        --executor docker \
+        --docker-image docker:17.06.0-ce \
+        --docker-volumes /var/run/docker.sock:/var/run/docker.sock
+
+step 10: check config
+    # cat /srv/gitlab-runner/config.toml
+
+
+for more check this link:
+    https://medium.com/@tonywooster/docker-in-docker-in-gitlab-runners-220caeb708ca
 ```
