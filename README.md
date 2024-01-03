@@ -16,6 +16,17 @@ docker ps
 docker exec -it gitlab-runner bash
 
 gitlab-runner register
+
+
+change user to gitlab-runner and chck this user is added sudo group
+create ssh key and add to pub key to server and private key add to
+variable gitlab-ci or use directly in container
+
+adduser -aG sudo gitlab-runner
+change gitlab-runner
+ssh-keygen -t rsa -b 4096 -C "example@gmail.com"
+ssh-copy-id -i ~/.ssh/id_rsa.pub username@ip
+ssh -i ~/.ssh/id_rsa.pub username@ip
 ```
 
 ***
